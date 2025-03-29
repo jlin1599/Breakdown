@@ -162,12 +162,14 @@ function getConcept(title, file) {
     return file[title] || null;
 }
 
+// Create node/concept object
 function createNode(title, file) {
     const child_info = getConcept(title, file);
 
     return new Concept(title, child_info.description, []);
 }
 
+// Recursive helper function for generating tree
 function createTreeHelper(concept, parsed_pdf) {
 
     const node = createNode(concept, parsed_pdf);
@@ -205,15 +207,29 @@ function createTree(parsed_pdf) {
 
     return root;
 
-    
-
 }
 
 // createNode("Vehicle", parsed_pdf);
 root = createTree(parsed_pdf);
 const concept_hierarchy = new Tree(root);
-;
-console.log(concept_hierarchy)
+console.log(concept_hierarchy);
 
+
+
+// Display nodes for each concept in tree (using bfs, but should modify later for app purposes)
+frontier = [concept_hierarchy.root]
+visited = []
+
+while (frontier.length !== 0) {
+    node = frontier.shift();
+
+    // draw node for concept
+    console.log(node);
+
+    for (child in node.children) {
+        frontier.push(node.children[child]);
+    }
+    
+}
 
 draw();
