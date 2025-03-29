@@ -1,14 +1,9 @@
 // Concept is like a "node" or vertex within a tree
 class Concept {
-
-    title;
-    description;
-    children; // Array of Concepts
-
-    constructor(title, description) {
+    constructor(title, description, children = []) {
         this.title = title;
         this.description = description;
-        this.children = [];
+        this.children = children;
     }
 
     addChild(child) {
