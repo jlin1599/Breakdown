@@ -3,19 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Parsing</title>
-  <!--<link rel="stylesheet" href="../styles/style.css">  Link to your styles -->
+  <title>Upload PDF for Parsing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    #uploadForm {
+      margin-bottom: 20px;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+
+    .upload-area:hover {
+      border-color: #666;
+    }
+
+    .upload-area.dragover {
+      border-color: #4CAF50;
+      background-color: rgba(76, 175, 80, 0.1);
+    }
+
+    .file-name {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .selected-file {
+      display: none;
+      background-color: #e8f5e9;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    .selected-file.visible {
+      display: block;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    #output {
+      margin-top: 20px;
+      padding: 1rem;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    .success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .error {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+
+    .loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+
+    .loading.visible {
+      display: flex;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <h1>Upload and Parse PDF</h1>
+  <div class="container">
+    <h1>Upload a PDF File for Parsing</h1>
+    
+    <!-- File upload form -->
+    <form id="uploadForm">
+      <div class="upload-area" id="dropZone">
+        <p>Drag & Drop your PDF here or click to select</p>
+        <input type="file" id="fileInput" accept=".pdf" required />
+        <div class="selected-file" id="selectedFile"></div>
+      </div>
+      <button type="submit" id="submitButton">Upload PDF</button>
+    </form>
 
-  <!-- Input for selecting PDF file -->
-  <input type="file" id="fileInput" />
-  
-  <!-- Container to display extracted text from the PDF -->
-  <pre id="output"></pre> 
-  
-  <!-- Reference the pdf-parser.js script -->
-  <script src="../scripts/pdf-parser.js"></script> <!-- Path to pdf-parser.js -->
+    <!-- Loading indicator -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span>Processing PDF...</span>
+    </div>
+
+    <!-- Display response -->
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const submitButton = document.getElementById("submitButton");
+    const loading = document.getElementById("loading");
+    const output = document.getElementById("output");
+    const selectedFile = document.getElementById("selectedFile");
+
+    // Handle drag and drop events
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+      dropZone.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+      dropZone.classList.remove('dragover');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    function updateFileName() {
+      const file = fileInput.files[0];
+      if (file) {
+        selectedFile.textContent = `Selected file: ${file.name}`;
+        selectedFile.classList.add('visible');
+      } else {
+        selectedFile.textContent = '';
+        selectedFile.classList.remove('visible');
+      }
+    }
+
+    fileInput.addEventListener('change', updateFileName);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+      updateFileName();
+    }
+
+    // Handle the form submission and file upload
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const file = fileInput.files[0];
+
+      if (!file) {
+        showError("Please select a PDF file!");
+        return;
+      }
+
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showError("Please upload a PDF file!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Disable form and show loading
+      submitButton.disabled = true;
+      loading.classList.add('visible');
+      output.className = '';
+      output.textContent = '';
+
+      try {
+        // Send the file to the FastAPI server
+        const response = await fetch("http://localhost:8000/parse-pdf", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        // Handle server response
+        if (response.ok) {
+          showSuccess(`PDF parsed successfully! JSON file saved at: ${data.output_path}`);
+        } else {
+          showError(`Error: ${data.message}`);
+        }
+      } catch (error) {
+        showError(`An error occurred: ${error.message}`);
+      } finally {
+        // Re-enable form and hide loading
+        submitButton.disabled = false;
+        loading.classList.remove('visible');
+      }
+    });
+
+    function showSuccess(message) {
+      output.className = 'success';
+      output.textContent = message;
+    }
+
+    function showError(message) {
+      output.className = 'error';
+      output.textContent = message;
+    }
+  </script>
 </body>
 </html>
