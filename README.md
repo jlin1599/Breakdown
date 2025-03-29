@@ -37,4 +37,4 @@ python app.py
 - PyMuPDF - PDF processing
 - HTML/CSS/JavaScript - Frontend interface
 
-## Created at HackPrinceton 2024 
+## Created at HackPrinceton 2025
