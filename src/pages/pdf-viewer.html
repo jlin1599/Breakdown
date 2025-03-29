@@ -140,6 +140,13 @@
   <div class="container">
     <h1>Upload a PDF File for Parsing</h1>
     
+    <!-- Navigation -->
+    <nav style="margin-bottom: 20px;">
+      <a href="/" style="color: #4CAF50; text-decoration: none; margin-right: 20px;">Home</a>
+      <a href="/pdf-viewer" style="color: #4CAF50; text-decoration: none; margin-right: 20px;">PDF Viewer</a>
+      <a href="/view" style="color: #4CAF50; text-decoration: none;">View Canvas</a>
+    </nav>
+    
     <!-- File upload form -->
     <form id="uploadForm">
       <div class="upload-area" id="dropZone">
@@ -245,8 +252,8 @@
       output.textContent = '';
 
       try {
-        // Send the file to the FastAPI server
-        const response = await fetch("http://localhost:8000/parse-pdf", {
+        // Send the file to the FastAPI server using relative path
+        const response = await fetch("/parse-pdf", {
           method: "POST",
           body: formData,
         });
