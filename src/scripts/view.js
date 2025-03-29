@@ -118,26 +118,34 @@ function drawWireframe() {
 }
 
 // Create a tree from parsing json file
-parsed_pdf = {
-    "Vehicle": {
-        description: "Anything that can transport people",
-        children: ["Car", "Train", "Plane"]
-    },
-    "Car": {
-        description: "A road vehicle with four wheels, operating by a driver",
-        children: []
-    },
-    "Train": {
-        description: "A long distance method for transporting people and cargo",
-        children: []
-    },
-    "Plane": {
-        description: "A flying vehicle, for extreme long distance overseas travel",
-        children: []
+let concept_hierarchy;
+
+// Fetch test data and initialize visualization
+async function initializeVisualization() {
+    try {
+        const response = await fetch('/test-concepts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const parsed_pdf = await response.json();
+        const root = createTree(parsed_pdf);
+        concept_hierarchy = new Tree(root);
+        console.log('Concept hierarchy loaded:', concept_hierarchy);
+        draw(); // Initial draw
+    } catch (error) {
+        console.error('Error fetching concept data:', error);
     }
 }
 
-// Recursively construct tree from json file
+// Initialize when page loads
+window.addEventListener('load', initializeVisualization);
 
 // Get individual concept and information from json file, given the title and json file
 function getConcept(title, file) {
@@ -168,7 +176,6 @@ function createTreeHelper(concept, parsed_pdf) {
 }
 
 function createTree(parsed_pdf) {
-
     let root, children;
 
     // Get first object to be root
@@ -182,82 +189,100 @@ function createTree(parsed_pdf) {
     if (children.length === 0)
         return root;
 
-    for (child in children) { // Child is not the element in the children array, but the index (because javascript sucks!)
-        
-        root.children.push( createTreeHelper(children[child], parsed_pdf) );
+    for (let childTitle of children) {
+        const childNode = createNode(childTitle, parsed_pdf);
+        root.children.push(childNode);
     }
 
     return root;
-
 }
-
-// createNode("Vehicle", parsed_pdf);
-root = createTree(parsed_pdf);
-const concept_hierarchy = new Tree(root);
-console.log(concept_hierarchy);
-
-
-
-
 
 draw();
 
 function drawNode(x, y, title) {
     ctx.beginPath();
     ctx.arc(x, y, 20, 0, Math.PI * 2); // Draw circle
-    ctx.fillStyle = "blue"; 
+    ctx.fillStyle = "#4A90E2"; 
     ctx.fill();
     ctx.stroke();
 
     // Set text properties
-    ctx.fillStyle = "red";
-    ctx.font = "20px Arial";
+    ctx.fillStyle = "white";
+    ctx.font = "16px Arial";
 
     // Center the text horizontally
     const textWidth = ctx.measureText(title).width;
     const textX = x - textWidth / 2; // Center horizontally
-    const textY = y - 40; // Position above the node
+    const textY = y + 6; // Center vertically
 
     ctx.fillText(title, textX, textY);
 }
 
+function drawConnection(fromX, fromY, toX, toY) {
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
 
 function draw() {
+    if (!concept_hierarchy || !concept_hierarchy.root) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     
     ctx.scale(scaleFactor, scaleFactor);
-
     ctx.translate(x_offset, y_offset);
 
     drawWireframe();
 
-    // Display nodes for each concept in tree (using bfs, but should modify later for app purposes)
-    let frontier = [concept_hierarchy.root]
-    let visited = []
-    let nodes_per_layer = 1; // Keeps track of the nodes in each level of the tree, for displaying purposes
-    let x = 200;
-    y = 200;
-
-    while (frontier.length !== 0) {
-
-        node = frontier.shift();
-        visited.push(node);
-
-        // draw node for concept
-        console.log(node);
-        drawNode(x, y);
-        x += 100;
-        y += 100;
-
-        for (child in node.children) {
-            frontier.push(node.children[child]);
+    // Display nodes for each concept in tree using a level-order traversal
+    const nodePositions = new Map(); // Store positions of nodes
+    const queue = [{node: concept_hierarchy.root, level: 0, index: 0}];
+    const levelCounts = new Map(); // Count nodes at each level
+    
+    // First pass: count nodes at each level
+    const tempQueue = [...queue];
+    while (tempQueue.length > 0) {
+        const {node, level} = tempQueue.shift();
+        levelCounts.set(level, (levelCounts.get(level) || 0) + 1);
+        for (let child of node.children) {
+            tempQueue.push({node: child, level: level + 1});
         }
-        
     }
 
-    // Example text
-    
+    // Second pass: draw nodes with proper positioning
+    while (queue.length > 0) {
+        const {node, level, index} = queue.shift();
+        
+        const levelWidth = levelCounts.get(level);
+        const spacing = Math.min(200, canvas.width / (levelWidth + 1));
+        const startX = canvas.width/4 - (levelWidth * spacing)/2;
+        
+        const x = startX + (index + 1) * spacing;
+        const y = 100 + level * 150;
+        
+        nodePositions.set(node, {x, y});
+        drawNode(x, y, node.title);
+
+        // Draw connections to children
+        let childIndex = 0;
+        for (let child of node.children) {
+            queue.push({node: child, level: level + 1, index: childIndex++});
+        }
+    }
+
+    // Draw connections after all nodes are positioned
+    for (let [node, pos] of nodePositions) {
+        for (let child of node.children) {
+            const childPos = nodePositions.get(child);
+            if (childPos) {
+                drawConnection(pos.x, pos.y, childPos.x, childPos.y);
+            }
+        }
+    }
 
     ctx.restore();
 }
