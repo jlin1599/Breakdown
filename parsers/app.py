@@ -1,9 +1,15 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import uvicorn
 import os
+from pathlib import Path
 from .pdf_parser import PDFParser
+
+# Get the base directory
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 app = FastAPI()
 
@@ -16,10 +22,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files directory
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "src")), name="static")
+
 # Create the output directory if it doesn't exist
 os.makedirs("parsed_pdfs", exist_ok=True)
 
 parser = PDFParser(output_dir="parsed_pdfs")
+
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    # Read and return the home page
+    with open(BASE_DIR / "src" / "pages" / "home.html") as f:
+        return f.read()
+
+@app.get("/pdf-viewer", response_class=HTMLResponse)
+async def pdf_viewer():
+    # Read and return the PDF viewer page
+    with open(BASE_DIR / "src" / "pages" / "pdf-viewer.html") as f:
+        return f.read()
 
 @app.post("/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
