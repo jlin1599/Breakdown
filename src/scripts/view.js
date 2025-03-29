@@ -95,24 +95,6 @@ canvas.addEventListener("wheel", (e) => {
     draw();
 });
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    
-    ctx.scale(scaleFactor, scaleFactor);
-
-    ctx.translate(x_offset, y_offset);
-
-    drawWireframe();
-
-    // Example text
-    ctx.fillStyle = "red";
-    ctx.font = "24px Arial";
-    ctx.fillText("Zoom and Pan the canvas!", 150, 150); // This text will also zoom and pan
-
-    ctx.restore();
-}
-
 function drawWireframe() {
     ctx.strokeStyle = "#aaa";
     ctx.lineWidth = 0.3;
@@ -216,20 +198,66 @@ console.log(concept_hierarchy);
 
 
 
-// Display nodes for each concept in tree (using bfs, but should modify later for app purposes)
-frontier = [concept_hierarchy.root]
-visited = []
 
-while (frontier.length !== 0) {
-    node = frontier.shift();
-
-    // draw node for concept
-    console.log(node);
-
-    for (child in node.children) {
-        frontier.push(node.children[child]);
-    }
-    
-}
 
 draw();
+
+function drawNode(x, y, title) {
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2); // Draw circle
+    ctx.fillStyle = "blue"; 
+    ctx.fill();
+    ctx.stroke();
+
+    // Set text properties
+    ctx.fillStyle = "red";
+    ctx.font = "20px Arial";
+
+    // Center the text horizontally
+    const textWidth = ctx.measureText(title).width;
+    const textX = x - textWidth / 2; // Center horizontally
+    const textY = y - 40; // Position above the node
+
+    ctx.fillText(title, textX, textY);
+}
+
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    
+    ctx.scale(scaleFactor, scaleFactor);
+
+    ctx.translate(x_offset, y_offset);
+
+    drawWireframe();
+
+    // Display nodes for each concept in tree (using bfs, but should modify later for app purposes)
+    let frontier = [concept_hierarchy.root]
+    let visited = []
+    let nodes_per_layer = 1; // Keeps track of the nodes in each level of the tree, for displaying purposes
+    let x = 200;
+    y = 200;
+
+    while (frontier.length !== 0) {
+
+        node = frontier.shift();
+        visited.push(node);
+
+        // draw node for concept
+        console.log(node);
+        drawNode(x, y);
+        x += 100;
+        y += 100;
+
+        for (child in node.children) {
+            frontier.push(node.children[child]);
+        }
+        
+    }
+
+    // Example text
+    
+
+    ctx.restore();
+}
