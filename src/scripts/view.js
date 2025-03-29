@@ -1,3 +1,51 @@
+// import { Concept } from './Concept.js'
+// import { Tree } from './Tree.js' 
+
+// Putting all classes in 1 file (for now until frontend server is up and running)
+
+// Concept is like a "node" or vertex within a tree
+class Concept {
+
+    title;
+    description;
+    children; // Array of Concepts
+
+    constructor(title, description, children) {
+        this.title = title;
+        this.description = description;
+        this.children = children;
+    }
+
+    addChild(child) {
+        this.children.append(child)
+    }
+
+    toString() {
+        return `${this.title}: ${this.description}, children = ${children}`;
+    }
+    
+}
+
+class Tree {
+    
+    root; // Array of Concepts, representing topmost concepts in tree
+
+    constructor(root) {
+        this.root = root;
+    }
+
+    toString() {
+        return `${this.title}: ${this.description}, children = ${children}`;
+    }
+
+
+}
+
+
+
+// Start of actual view.js code
+
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -47,24 +95,6 @@ canvas.addEventListener("wheel", (e) => {
     draw();
 });
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    
-    ctx.scale(scaleFactor, scaleFactor);
-
-    ctx.translate(x_offset, y_offset);
-
-    drawWireframe();
-
-    // Example text
-    ctx.fillStyle = "red";
-    ctx.font = "24px Arial";
-    ctx.fillText("Zoom and Pan the canvas!", 150, 150); // This text will also zoom and pan
-
-    ctx.restore();
-}
-
 function drawWireframe() {
     ctx.strokeStyle = "#aaa";
     ctx.lineWidth = 0.3;
@@ -87,4 +117,147 @@ function drawWireframe() {
     }
 }
 
+// Create a tree from parsing json file
+parsed_pdf = {
+    "Vehicle": {
+        description: "Anything that can transport people",
+        children: ["Car", "Train", "Plane"]
+    },
+    "Car": {
+        description: "A road vehicle with four wheels, operating by a driver",
+        children: []
+    },
+    "Train": {
+        description: "A long distance method for transporting people and cargo",
+        children: []
+    },
+    "Plane": {
+        description: "A flying vehicle, for extreme long distance overseas travel",
+        children: []
+    }
+}
+
+// Recursively construct tree from json file
+
+// Get individual concept and information from json file, given the title and json file
+function getConcept(title, file) {
+    return file[title] || null;
+}
+
+// Create node/concept object
+function createNode(title, file) {
+    const child_info = getConcept(title, file);
+
+    return new Concept(title, child_info.description, []);
+}
+
+// Recursive helper function for generating tree
+function createTreeHelper(concept, parsed_pdf) {
+
+    const node = createNode(concept, parsed_pdf);
+
+
+    if (node.children.length === 0)
+        return node;
+
+    for (child in node.children) {
+        node.children.push( createTreeHelper(child, parsed_pdf) );
+    }
+
+    return node;
+}
+
+function createTree(parsed_pdf) {
+
+    let root, children;
+
+    // Get first object to be root
+    for (var [title, data] of Object.entries(parsed_pdf)) {
+        root = new Concept(title, data.description, []);
+        children = data.children;
+        break;
+    }
+
+    // Recursively define children nodes
+    if (children.length === 0)
+        return root;
+
+    for (child in children) { // Child is not the element in the children array, but the index (because javascript sucks!)
+        
+        root.children.push( createTreeHelper(children[child], parsed_pdf) );
+    }
+
+    return root;
+
+}
+
+// createNode("Vehicle", parsed_pdf);
+root = createTree(parsed_pdf);
+const concept_hierarchy = new Tree(root);
+console.log(concept_hierarchy);
+
+
+
+
+
 draw();
+
+function drawNode(x, y, title) {
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2); // Draw circle
+    ctx.fillStyle = "blue"; 
+    ctx.fill();
+    ctx.stroke();
+
+    // Set text properties
+    ctx.fillStyle = "red";
+    ctx.font = "20px Arial";
+
+    // Center the text horizontally
+    const textWidth = ctx.measureText(title).width;
+    const textX = x - textWidth / 2; // Center horizontally
+    const textY = y - 40; // Position above the node
+
+    ctx.fillText(title, textX, textY);
+}
+
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    
+    ctx.scale(scaleFactor, scaleFactor);
+
+    ctx.translate(x_offset, y_offset);
+
+    drawWireframe();
+
+    // Display nodes for each concept in tree (using bfs, but should modify later for app purposes)
+    let frontier = [concept_hierarchy.root]
+    let visited = []
+    let nodes_per_layer = 1; // Keeps track of the nodes in each level of the tree, for displaying purposes
+    let x = 200;
+    y = 200;
+
+    while (frontier.length !== 0) {
+
+        node = frontier.shift();
+        visited.push(node);
+
+        // draw node for concept
+        console.log(node);
+        drawNode(x, y);
+        x += 100;
+        y += 100;
+
+        for (child in node.children) {
+            frontier.push(node.children[child]);
+        }
+        
+    }
+
+    // Example text
+    
+
+    ctx.restore();
+}
