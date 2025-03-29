@@ -118,34 +118,26 @@ function drawWireframe() {
 }
 
 // Create a tree from parsing json file
-let concept_hierarchy;
-
-// Fetch test data and initialize visualization
-async function initializeVisualization() {
-    try {
-        const response = await fetch('/test-concepts', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const parsed_pdf = await response.json();
-        const root = createTree(parsed_pdf);
-        concept_hierarchy = new Tree(root);
-        console.log('Concept hierarchy loaded:', concept_hierarchy);
-        draw(); // Initial draw
-    } catch (error) {
-        console.error('Error fetching concept data:', error);
+parsed_pdf = {
+    "Vehicle": {
+        description: "Anything that can transport people",
+        children: ["Car", "Train", "Plane"]
+    },
+    "Car": {
+        description: "A road vehicle with four wheels, operating by a driver",
+        children: []
+    },
+    "Train": {
+        description: "A long distance method for transporting people and cargo",
+        children: []
+    },
+    "Plane": {
+        description: "A flying vehicle, for extreme long distance overseas travel",
+        children: []
     }
 }
 
-// Initialize when page loads
-window.addEventListener('load', initializeVisualization);
+// Recursively construct tree from json file
 
 // Get individual concept and information from json file, given the title and json file
 function getConcept(title, file) {
@@ -176,6 +168,7 @@ function createTreeHelper(concept, parsed_pdf) {
 }
 
 function createTree(parsed_pdf) {
+
     let root, children;
 
     // Get first object to be root
@@ -189,15 +182,34 @@ function createTree(parsed_pdf) {
     if (children.length === 0)
         return root;
 
-    for (let childTitle of children) {
-        const childNode = createNode(childTitle, parsed_pdf);
-        root.children.push(childNode);
+    for (child in children) { // Child is not the element in the children array, but the index (because javascript sucks!)
+        
+        root.children.push( createTreeHelper(children[child], parsed_pdf) );
     }
 
     return root;
+
 }
 
+// createNode("Vehicle", parsed_pdf);
+root = createTree(parsed_pdf);
+const concept_hierarchy = new Tree(root);
+console.log(concept_hierarchy);
+
+
+
+
+
 draw();
+
+function drawConnection(fromX, fromY, toX, toY) {
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
 
 function drawNode(x, y, title) {
     ctx.beginPath();
@@ -216,15 +228,6 @@ function drawNode(x, y, title) {
     const textY = y + 6; // Center vertically
 
     ctx.fillText(title, textX, textY);
-}
-
-function drawConnection(fromX, fromY, toX, toY) {
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.strokeStyle = "#666";
-    ctx.lineWidth = 2;
-    ctx.stroke();
 }
 
 function draw() {
@@ -267,7 +270,7 @@ function draw() {
         nodePositions.set(node, {x, y});
         drawNode(x, y, node.title);
 
-        // Draw connections to children
+        // Add children to queue with proper indices
         let childIndex = 0;
         for (let child of node.children) {
             queue.push({node: child, level: level + 1, index: childIndex++});
