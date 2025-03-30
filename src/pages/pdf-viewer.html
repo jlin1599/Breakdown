@@ -337,7 +337,7 @@
           <input type="file" id="fileInput" accept=".pdf" required />
           <div class="selected-file" id="selectedFile"></div>
         </div>
-        <button type="submit" id="submitButton" class="submit-button">Generate Concept Map</button>
+        <button type="submit" id="submitButton" class="submit-button" disabled>Generate Concept Map</button>
       </form>
 
       <div class="loading" id="loading">
@@ -351,6 +351,108 @@
 
   <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
   <script>
+    // Function to sanitize filename for display
+    function sanitizeFilename(filename) {
+      return filename.replace(/[^\x20-\x7E]/g, '').trim();
+    }
+
+    // File upload handling
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFile = document.getElementById('selectedFile');
+    const submitButton = document.getElementById('submitButton');
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+    const form = document.getElementById('uploadForm');
+
+    function handleFileSelect(file) {
+      if (file) {
+        const cleanFilename = sanitizeFilename(file.name);
+        selectedFile.textContent = cleanFilename;
+        selectedFile.classList.add('visible');
+        submitButton.disabled = false;
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      handleFileSelect(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFileSelect(e.dataTransfer.files[0]);
+    });
+
+    function showSuccess(message) {
+      output.textContent = message;
+      output.className = 'success';
+      output.classList.add('visible');
+    }
+
+    function showError(message) {
+      output.textContent = message;
+      output.className = 'error';
+      output.classList.add('visible');
+    }
+
+    // Handle form submission
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const file = fileInput.files[0];
+      if (!file) {
+        showError("Please select a PDF file!");
+        return;
+      }
+
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showError("Please upload a PDF file!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      submitButton.disabled = true;
+      loading.classList.add('visible');
+      output.classList.remove('visible');
+
+      try {
+        const response = await fetch('/parse-pdf', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showSuccess("PDF processed successfully! Redirecting to concept map...");
+          setTimeout(() => {
+            window.location.href = '/view';
+          }, 2000);
+        } else {
+          showError(result.message || "Error processing PDF");
+        }
+      } catch (error) {
+        showError("Error uploading file: " + error.message);
+      } finally {
+        submitButton.disabled = false;
+        loading.classList.remove('visible');
+      }
+    });
+
     // Initialize particles.js
     particlesJS('particles-js', {
       particles: {
@@ -397,133 +499,6 @@
         }
       },
       retina_detect: true
-    });
-
-    const form = document.getElementById("uploadForm");
-    const dropZone = document.getElementById("dropZone");
-    const fileInput = document.getElementById("fileInput");
-    const submitButton = document.getElementById("submitButton");
-    const loading = document.getElementById("loading");
-    const output = document.getElementById("output");
-    const selectedFile = document.getElementById("selectedFile");
-
-    // Handle drag and drop events
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, preventDefaults, false);
-      document.body.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight(e) {
-      dropZone.classList.add('dragover');
-    }
-
-    function unhighlight(e) {
-      dropZone.classList.remove('dragover');
-    }
-
-    dropZone.addEventListener('drop', handleDrop, false);
-    dropZone.addEventListener('click', () => fileInput.click());
-
-    function updateFileName() {
-      const file = fileInput.files[0];
-      if (file) {
-        selectedFile.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
-            <span style="color: #4a5568;">📄 ${file.name}</span>
-            <button type="button" onclick="clearFile()" style="background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 1.2rem;">×</button>
-          </div>
-        `;
-        selectedFile.classList.add('visible');
-      } else {
-        selectedFile.textContent = '';
-        selectedFile.classList.remove('visible');
-      }
-    }
-
-    function clearFile() {
-      fileInput.value = '';
-      updateFileName();
-    }
-
-    fileInput.addEventListener('change', updateFileName);
-
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      fileInput.files = files;
-      updateFileName();
-    }
-
-    function showSuccess(message) {
-      output.textContent = message;
-      output.className = 'success';
-      output.classList.add('visible');
-    }
-
-    function showError(message) {
-      output.textContent = message;
-      output.className = 'error';
-      output.classList.add('visible');
-    }
-
-    // Handle the form submission and file upload
-    form.addEventListener("submit", async function(event) {
-      event.preventDefault();
-
-      const file = fileInput.files[0];
-
-      if (!file) {
-        showError("Please select a PDF file!");
-        return;
-      }
-
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        showError("Please upload a PDF file!");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      submitButton.disabled = true;
-      loading.classList.add('visible');
-      output.classList.remove('visible');
-
-      try {
-        const response = await fetch('/parse-pdf', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          showSuccess("PDF processed successfully! Redirecting to concept map...");
-          setTimeout(() => {
-            window.location.href = '/view';
-          }, 2000);
-        } else {
-          showError(result.message || "Error processing PDF");
-        }
-      } catch (error) {
-        showError("Error uploading file: " + error.message);
-      } finally {
-        submitButton.disabled = false;
-        loading.classList.remove('visible');
-      }
     });
 
     // Scroll progress bar

@@ -5,10 +5,18 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 from pathlib import Path
-from .pdf_parser import PDFParser
+import re
+from pdf_parser import PDFParser
 
 # Get the base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+def sanitize_filename(filename: str) -> str:
+    # Remove non-ASCII characters and common problematic characters
+    clean_name = re.sub(r'[^\x00-\x7F]+', '', filename)
+    # Remove any remaining special characters except dots, underscores, and hyphens
+    clean_name = re.sub(r'[^\w\-\.]', '_', clean_name)
+    return clean_name
 
 app = FastAPI()
 
@@ -60,8 +68,11 @@ async def parse_pdf(file: UploadFile = File(...)):
                 status_code=400
             )
 
+        # Sanitize the filename
+        clean_filename = sanitize_filename(file.filename)
+        
         # Save uploaded file temporarily
-        temp_path = f"temp_{file.filename}"
+        temp_path = f"temp_{clean_filename}"
         with open(temp_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
