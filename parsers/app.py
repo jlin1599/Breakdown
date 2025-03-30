@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.gzip import GZipMiddleware
 import uvicorn
 import os
 from pathlib import Path
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add Gzip compression
+app.add_middleware(GZipMiddleware)
 
 # Mount static files directories
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "src")), name="static")
