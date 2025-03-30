@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
+
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -64,20 +65,7 @@ async def view():
 @app.post("/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
     try:
-        if not file.filename.lower().endswith('.pdf'):
-            return JSONResponse(
-                content={
-                    "status": "error",
-                    "message": "Uploaded file must be a PDF"
-                },
-                status_code=400
-            )
 
-        # Sanitize the filename
-        clean_filename = sanitize_filename(file.filename)
-        
-        # Save uploaded file temporarily
-        temp_path = f"temp_{clean_filename}"
         with open(temp_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
@@ -105,29 +93,6 @@ async def parse_pdf(file: UploadFile = File(...)):
             },
             status_code=500
         )
-
-@app.post("/test-concepts")
-async def test_concepts():
-    # This is test data that mimics what the LLM might produce
-    test_data = {
-        "Vehicle": {
-            "description": "Anything that can transport people",
-            "children": ["Car", "Train", "Plane"]
-        },
-        "Car": {
-            "description": "A road vehicle with four wheels, operating by a driver",
-            "children": []
-        },
-        "Train": {
-            "description": "A long distance method for transporting people and cargo",
-            "children": []
-        },
-        "Plane": {
-            "description": "A flying vehicle, for extreme long distance overseas travel",
-            "children": []
-        }
-    }
-    return JSONResponse(content=test_data)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

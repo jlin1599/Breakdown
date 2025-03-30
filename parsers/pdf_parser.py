@@ -45,29 +45,7 @@ class PDFParser:
 
         # Process each page
         for page_num in range(len(doc)):
-            page = doc[page_num]
 
-            # Extract text blocks with proper encoding handling
-            text_blocks = page.get_text("blocks")
-            for block in text_blocks:
-                if block[6] == 0:  # Text block
-                    # Clean and normalize the text content
-                    text_content = block[4]
-                    try:
-                        # Normalize unicode characters
-                        text_content = text_content.encode('utf-8').decode('utf-8')
-                        # Remove any problematic characters
-                        text_content = ''.join(char for char in text_content if ord(char) < 65536)
-                        # Replace common problematic character sequences
-                        text_content = text_content.replace('öŸ', '')  # Remove specific problematic sequence
-                        text_content = text_content.replace('\x00', '')  # Remove null characters
-                    except UnicodeError:
-                        # If there's an encoding error, try to recover the text
-                        text_content = block[4].encode('ascii', 'ignore').decode('ascii')
-
-                    pdf_doc.objects.append(PDFObject(
-                        type="text",
-                        content=text_content,
                         page_number=page_num + 1,
                         location={
                             "x0": block[0],
