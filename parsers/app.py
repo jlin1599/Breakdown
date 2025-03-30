@@ -38,9 +38,10 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "src")), name="static"
 app.mount("/scripts", StaticFiles(directory=str(BASE_DIR / "src" / "scripts")), name="scripts")
 
 # Create the output directory if it doesn't exist
-os.makedirs("parsed_pdfs", exist_ok=True)
+parsed_pdfs_dir = BASE_DIR / "parsed_pdfs"
+os.makedirs(parsed_pdfs_dir, exist_ok=True)
 
-parser = PDFParser(output_dir="parsed_pdfs")
+parser = PDFParser(output_dir=str(parsed_pdfs_dir))
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
