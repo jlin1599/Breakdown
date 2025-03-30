@@ -95,11 +95,14 @@ canvas.addEventListener("dblclick", (e) => {
             activeDescription = null;
         } else {
             expandedNodes.add(clickedNode.title);
-            activeDescription = {
-                x: mouseX,
-                y: mouseY,
-                text: clickedNode.description
-            };
+            const nodePos = nodePositions.get(clickedNode);
+            if (nodePos) {
+                activeDescription = {
+                    x: nodePos.x,
+                    y: nodePos.y,
+                    text: clickedNode.description
+                };
+            }
         }
         draw();
     } else {
@@ -163,7 +166,7 @@ function drawNode(x, y, title) {
     ctx.stroke();
 
     // Draw text
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "black";
     ctx.font = "bold 14px Arial";
     const textWidth = ctx.measureText(title).width;
     ctx.fillText(title, x - textWidth / 2, y + 5);
@@ -207,6 +210,7 @@ function drawDescription(x, y, text) {
     const boxWidth = maxWidth + padding * 2;
     const boxHeight = lines.length * lineHeight + padding * 2;
     
+    ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 5;
@@ -225,6 +229,8 @@ function drawDescription(x, y, text) {
     lines.forEach((line, i) => {
         ctx.fillText(line, x - maxWidth/2, y - boxHeight - 25 + (i + 1) * lineHeight);
     });
+    
+    ctx.restore();
 }
 
 function draw() {
@@ -287,10 +293,9 @@ function draw() {
         }
     }
 
+    // Draw description box if active
     if (activeDescription) {
-        const canvasX = activeDescription.x - canvas.width/2 - x_offset;
-        const canvasY = activeDescription.y - canvas.height/2 - y_offset;
-        drawDescription(canvasX, canvasY, activeDescription.text);
+        drawDescription(activeDescription.x, activeDescription.y, activeDescription.text);
     }
 
     ctx.restore();
@@ -411,23 +416,44 @@ window.addEventListener('load', () => {
 
 // Test data
 const parsed_pdf = {
-    "Vehicle": {
-        description: "Anything that can transport people",
-        children: ["Car", "Train", "Plane"]
+    "Quantum Mechanics": {
+        description: "Study of physical phenomena at nanoscopic scales",
+        children: ["Quantum State", "Electric Field", "Hydrogen Atom"]
     },
-    "Car": {
-        description: "A road vehicle with four wheels, operating by a driver",
+    "Quantum State": {
+        description: "A mathematical description of a quantum system",
+        children: ["Orthogonality", "Different Quantum States", "Wave Function"]
+    },
+    "Electric Field": {
+        description: "A field surrounding charged particles, influencing force",
+        children: ["Dipole", "Laser Interactions"]
+    },
+    "Hydrogen Atom": {
+        description: "The simplest atom with one proton and one electron",
+        children: ["Different Quantum States", "Laser Interactions"]
+    },
+    "Orthogonality": {
+        description: "Property where two functions are orthogonal in inner product space",
         children: []
     },
-    "Train": {
-        description: "A long distance method for transporting people and cargo",
+    "Different Quantum States": {
+        description: "Various possible energy levels of an electron in an atom",
         children: []
     },
-    "Plane": {
-        description: "A flying vehicle, for extreme long distance overseas travel",
+    "Wave Function": {
+        description: "Mathematical function describing quantum states",
+        children: []
+    },
+    "Dipole": {
+        description: "A system of two equal and oppositely charged or magnetized poles",
+        children: []
+    },
+    "Laser Interactions": {
+        description: "Interaction of laser fields with atomic or molecular systems",
         children: []
     }
 };
+
 
 function getConcept(title, file) {
     return file[title] || null;
@@ -438,21 +464,26 @@ function createNode(title, file) {
     return new Concept(title, child_info.description, []);
 }
 
+function buildNodeChildren(node, file) {
+    const nodeInfo = getConcept(node.title, file);
+    if (!nodeInfo) return;
+    
+    for (let childTitle of nodeInfo.children) {
+        const childNode = createNode(childTitle, file);
+        node.children.push(childNode);
+        buildNodeChildren(childNode, file);
+    }
+}
+
 function createTree(parsed_pdf) {
-    let root, children;
+    let root;
     for (var [title, data] of Object.entries(parsed_pdf)) {
         root = new Concept(title, data.description, []);
-        children = data.children;
         break;
     }
 
-    if (children.length === 0) return root;
-
-    for (let childTitle of children) {
-        const childNode = createNode(childTitle, parsed_pdf);
-        root.children.push(childNode);
-    }
-
+    if (!root) return null;
+    buildNodeChildren(root, parsed_pdf);
     return root;
 }
 

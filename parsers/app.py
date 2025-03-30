@@ -8,7 +8,7 @@ import uvicorn
 import os
 from pathlib import Path
 import re
-from pdf_parser import PDFParser
+from .pdf_parser import PDFParser
 
 # Get the base directory
 BASE_DIR = Path(__file__).resolve().parent.parent

@@ -31,10 +31,10 @@ async def extract_concepts(file: UploadFile = File(...)):
         return {
             "concepts": concepts,
             "relationships": relationships,
-            "stats": {
-                "physics_terms_found": len(concepts),
-                "meaningful_relationships": len(relationships)
-            }
+            # "stats": {
+            #    "physics_terms_found": len(concepts),
+            #    "meaningful_relationships": len(relationships)
+            # }
         }
     except Exception as e:
         raise HTTPException(500, detail=str(e))
@@ -42,3 +42,4 @@ async def extract_concepts(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
