@@ -45,7 +45,29 @@ class PDFParser:
 
         # Process each page
         for page_num in range(len(doc)):
+            page = doc[page_num]
 
+            # Extract text blocks with proper encoding handling
+            text_blocks = page.get_text("blocks")
+            for block in text_blocks:
+                if block[6] == 0:  # Text block
+                    # Clean and normalize the text content
+                    text_content = block[4]
+                    try:
+                        # Normalize unicode characters
+                        text_content = text_content.encode('utf-8').decode('utf-8')
+                        # Remove any problematic characters
+                        text_content = ''.join(char for char in text_content if ord(char) < 65536)
+                        # Replace common problematic character sequences
+                        text_content = text_content.replace('öŸ', '')  # Remove specific problematic sequence
+                        text_content = text_content.replace('\x00', '')  # Remove null characters
+                    except UnicodeError:
+                        # If there's an encoding error, try to recover the text
+                        text_content = block[4].encode('ascii', 'ignore').decode('ascii')
+
+                    pdf_doc.objects.append(PDFObject(
+                        type="text",
+                        content=text_content,
                         page_number=page_num + 1,
                         location={
                             "x0": block[0],
@@ -59,29 +81,29 @@ class PDFParser:
                         }
                     ))
 
-                # Extract images
-                images = page.get_images(full=True)
-                for img_index, img in enumerate(images):
-                    xref = img[0]
-                    base_image = doc.extract_image(xref)
-                    image_bytes = base_image["image"]
+            # Extract images
+            images = page.get_images(full=True)
+            for img_index, img in enumerate(images):
+                xref = img[0]
+                base_image = doc.extract_image(xref)
+                image_bytes = base_image["image"]
 
-                    pdf_doc.objects.append(PDFObject(
-                        type="image",
-                        content=base64.b64encode(image_bytes).decode('utf-8'),
-                        page_number=page_num + 1,
-                        location={},  # Could be enhanced to include image position
-                        metadata={
-                            "format": base_image["ext"],
-                            "colorspace": str(base_image.get("colorspace", "")),
-                            "size": len(image_bytes)
-                        }
-                    ))
+                pdf_doc.objects.append(PDFObject(
+                    type="image",
+                    content=base64.b64encode(image_bytes).decode('utf-8'),
+                    page_number=page_num + 1,
+                    location={},  # Could be enhanced to include image position
+                    metadata={
+                        "format": base_image["ext"],
+                        "colorspace": str(base_image.get("colorspace", "")),
+                        "size": len(image_bytes)
+                    }
+                ))
 
-            # Save to JSON file
-            output_path = self._save_to_json(pdf_doc)
-            doc.close()
-            return output_path
+        # Save to JSON file
+        output_path = self._save_to_json(pdf_doc)
+        doc.close()
+        return output_path
 
     def _extract_metadata(self, doc: fitz.Document) -> Dict[str, str]:
         """Extract PDF metadata."""
