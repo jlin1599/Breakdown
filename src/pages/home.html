@@ -4,10 +4,439 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>HTML 5 Boilerplate</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="theme-color" content="#ffffff">
+    <title>PDF Concept Map Generator</title>
+    <link rel="icon" type="image/png" href="/static/images/study.png" sizes="any">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #2d3748;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      #particles-js {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1;
+      }
+
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 3rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin: 2rem 0;
+        animation: float 6s ease-in-out infinite;
+        opacity: 0;
+        animation: fadeIn 1s ease-out forwards;
+      }
+
+      nav {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 50px;
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+      }
+
+      nav a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      nav a::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: white;
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+
+      nav a:hover::after {
+        width: 80%;
+      }
+
+      nav a:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+      }
+
+      h1 {
+        font-size: 3.5rem;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.3s forwards;
+      }
+
+      .hero {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: #4a5568;
+        max-width: 800px;
+        margin: 0 auto;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.5s forwards;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 3rem 0;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.7s forwards;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 0;
+      }
+
+      .feature-card:hover::before {
+        opacity: 0.1;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-card h3 {
+        color: #4a5568;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-card p {
+        color: #718096;
+        position: relative;
+        z-index: 1;
+      }
+
+      .upload-section {
+        text-align: center;
+        margin: 4rem 0;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 1.1s forwards;
+      }
+
+      .upload-button {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 2.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .upload-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: 0.5s;
+      }
+
+      .upload-button:hover::before {
+        left: 100%;
+      }
+
+      .upload-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        animation: pulse 2s infinite;
+      }
+
+      .workflow {
+        margin: 4rem 0;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.9s forwards;
+      }
+
+      .workflow h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        color: #2d3748;
+      }
+
+      .step-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .step {
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        cursor: pointer;
+      }
+
+      .step:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .step-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .step:hover .step-number {
+        transform: scale(1.1);
+        color: #764ba2;
+      }
+
+      .progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 3px;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        z-index: 1000;
+        transition: width 0.3s ease;
+      }
+    </style>
   </head>
   <body>
-    <script src="../scripts/home.js"></script>
+    <div class="progress-bar"></div>
+    <div id="particles-js"></div>
+    <div class="container">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/pdf-viewer">PDF Viewer</a>
+        <a href="/view">Concept Map</a>
+      </nav>
+
+      <div class="glass-card">
+        <div class="hero">
+          <h1>PDF Concept Map Generator</h1>
+          <p>Transform your PDF documents into interactive concept maps using advanced AI. Our tool analyzes your documents and creates beautiful, hierarchical visualizations of key concepts and their relationships.</p>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>AI-Powered Analysis</h3>
+            <p>Advanced language models extract and understand key concepts from your documents automatically.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Interactive Visualization</h3>
+            <p>Explore concepts through an interactive, zoomable interface with intuitive navigation.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Hierarchical Structure</h3>
+            <p>Concepts are organized in a clear hierarchy, showing relationships and dependencies.</p>
+          </div>
+        </div>
+
+        <div class="workflow">
+          <h2>How It Works</h2>
+          <div class="step-grid">
+            <div class="step">
+              <div class="step-number">1</div>
+              <h3>Upload PDF</h3>
+              <p>Upload your academic paper, research document, or any PDF file.</p>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <h3>AI Processing</h3>
+              <p>Our AI analyzes the content and identifies key concepts and relationships.</p>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <h3>Explore Map</h3>
+              <p>Interact with the generated concept map to explore and understand the content.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="upload-section">
+          <a href="/pdf-viewer" class="upload-button">
+            Upload Your PDF
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+      // Initialize particles.js
+      particlesJS('particles-js', {
+        particles: {
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: '#ffffff' },
+          shape: { type: 'circle' },
+          opacity: {
+            value: 0.5,
+            random: false,
+            animation: { enable: true, speed: 1, minimumValue: 0.1, sync: false }
+          },
+          size: {
+            value: 3,
+            random: true,
+            animation: { enable: true, speed: 2, minimumValue: 0.1, sync: false }
+          },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: '#ffffff',
+            opacity: 0.4,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 1,
+            direction: 'none',
+            random: false,
+            straight: false,
+            outMode: 'out',
+            bounce: false,
+          }
+        },
+        interactivity: {
+          detectsOn: 'canvas',
+          events: {
+            onhover: { enable: true, mode: 'repulse' },
+            onclick: { enable: true, mode: 'push' },
+            resize: true
+          },
+          modes: {
+            repulse: { distance: 100, duration: 0.4 },
+            push: { particles_nb: 4 }
+          }
+        },
+        retina_detect: true
+      });
+
+      // Scroll progress bar
+      window.addEventListener('scroll', () => {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        document.querySelector('.progress-bar').style.width = scrolled + '%';
+      });
+
+      // Add hover effect to steps
+      document.querySelectorAll('.step').forEach((step, index) => {
+        step.addEventListener('mouseenter', () => {
+          step.style.transform = 'translateY(-10px)';
+          step.querySelector('.step-number').style.transform = 'scale(1.2)';
+        });
+        step.addEventListener('mouseleave', () => {
+          step.style.transform = 'translateY(0)';
+          step.querySelector('.step-number').style.transform = 'scale(1)';
+        });
+      });
+    </script>
   </body>
 </html>

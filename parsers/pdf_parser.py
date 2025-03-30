@@ -46,15 +46,6 @@ class PDFParser:
         # Process each page
         for page_num in range(len(doc)):
 
-            page = doc[page_num]
-
-            # Extract text blocks
-            text_blocks = page.get_text("blocks")
-            for block in text_blocks:
-                if block[6] == 0:
-                    pdf_doc.objects.append(PDFObject(
-                        type="text",
-                        content=block[4],
                         page_number=page_num + 1,
                         location={
                             "x0": block[0],
@@ -91,8 +82,6 @@ class PDFParser:
             output_path = self._save_to_json(pdf_doc)
             doc.close()
             return output_path
-
-
 
     def _extract_metadata(self, doc: fitz.Document) -> Dict[str, str]:
         """Extract PDF metadata."""

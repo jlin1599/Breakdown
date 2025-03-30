@@ -2,20 +2,515 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Parsing</title>
-  <!--<link rel="stylesheet" href="../styles/style.css">  Link to your styles -->
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="theme-color" content="#ffffff">
+  <title>Upload PDF - Concept Map Generator</title>
+  <link rel="icon" type="image/png" href="/static/images/study.png" sizes="any">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -1000px 0; }
+      100% { background-position: 1000px 0; }
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #2d3748;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      margin: 2rem 0;
+      opacity: 0;
+      animation: fadeIn 1s ease-out forwards;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      border-radius: 50px;
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.5rem 1.5rem;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: white;
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+
+    nav a:hover::after {
+      width: 80%;
+    }
+
+    nav a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out 0.3s forwards;
+    }
+
+    .upload-area {
+      border: 3px dashed rgba(102, 126, 234, 0.3);
+      padding: 3rem;
+      text-align: center;
+      border-radius: 20px;
+      margin: 2rem 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out 0.5s forwards;
+    }
+
+    .upload-area::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(102, 126, 234, 0.1),
+        transparent
+      );
+      transform: rotate(45deg);
+      animation: shimmer 3s infinite linear;
+      pointer-events: none;
+    }
+
+    .upload-area::after {
+      display: none;
+    }
+
+    .upload-area:hover {
+      border-color: #667eea;
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .upload-area.dragover {
+      border-color: #764ba2;
+      background: rgba(102, 126, 234, 0.1);
+      animation: pulse 1s infinite;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .upload-text {
+      font-size: 1.2rem;
+      color: #4a5568;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-subtext {
+      font-size: 0.9rem;
+      color: #718096;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .selected-file {
+      display: none;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .selected-file.visible {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .submit-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2.5rem;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .submit-button:disabled {
+      background: #cbd5e0;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 2rem 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading.visible {
+      display: flex;
+      opacity: 1;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(102, 126, 234, 0.1);
+      border-left-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #output {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border-radius: 15px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    #output.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .success {
+      background: rgba(72, 187, 120, 0.1);
+      color: #2f855a;
+      border: 2px solid rgba(72, 187, 120, 0.2);
+    }
+
+    .error {
+      background: rgba(245, 101, 101, 0.1);
+      color: #c53030;
+      border: 2px solid rgba(245, 101, 101, 0.2);
+    }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 3px;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      z-index: 1000;
+      transition: width 0.3s ease;
+    }
+  </style>
 </head>
 <body>
-  <h1>Upload and Parse PDF</h1>
+  <div class="progress-bar"></div>
+  <div id="particles-js"></div>
+  <div class="container">
+    <nav>
+      <a href="/">Home</a>
+      <a href="/pdf-viewer">PDF Viewer</a>
+      <a href="/view">Concept Map</a>
+    </nav>
 
-  <!-- Input for selecting PDF file -->
-  <input type="file" id="fileInput" />
-  
-  <!-- Container to display extracted text from the PDF -->
-  <pre id="output"></pre> 
-  
-  <!-- Reference the pdf-parser.js script -->
-  <script src="../scripts/pdf-parser.js"></script> <!-- Path to pdf-parser.js -->
+    <div class="glass-card">
+      <h1>Upload Your PDF</h1>
+      
+      <form id="uploadForm">
+        <div class="upload-area" id="dropZone" role="button" aria-label="Upload PDF file">
+          <div class="upload-icon" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          </div>
+          <div class="upload-text">Drag and Drop your PDF here</div>
+          <div class="upload-subtext">or click to browse your files</div>
+          <input type="file" id="fileInput" accept=".pdf" required />
+          <div class="selected-file" id="selectedFile"></div>
+        </div>
+        <button type="submit" id="submitButton" class="submit-button" disabled>Generate Concept Map</button>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span style="margin-left: 1rem; color: #4a5568;">Analyzing PDF content...</span>
+      </div>
+
+      <div id="output"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    // Function to sanitize filename for display
+    function sanitizeFilename(filename) {
+      return filename.replace(/[^\x20-\x7E]/g, '').trim();
+    }
+
+    // File upload handling
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFile = document.getElementById('selectedFile');
+    const submitButton = document.getElementById('submitButton');
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+    const form = document.getElementById('uploadForm');
+
+    function handleFileSelect(file) {
+      if (file) {
+        const cleanFilename = sanitizeFilename(file.name);
+        selectedFile.textContent = cleanFilename;
+        selectedFile.classList.add('visible');
+        submitButton.disabled = false;
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      handleFileSelect(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFileSelect(e.dataTransfer.files[0]);
+    });
+
+    function showSuccess(message) {
+      output.textContent = message;
+      output.className = 'success';
+      output.classList.add('visible');
+    }
+
+    function showError(message) {
+      output.textContent = message;
+      output.className = 'error';
+      output.classList.add('visible');
+    }
+
+    // Handle form submission
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const file = fileInput.files[0];
+      if (!file) {
+        showError("Please select a PDF file!");
+        return;
+      }
+
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showError("Please upload a PDF file!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      submitButton.disabled = true;
+      loading.classList.add('visible');
+      output.classList.remove('visible');
+
+      try {
+        const response = await fetch('/parse-pdf', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showSuccess("PDF processed successfully! Redirecting to concept map...");
+          setTimeout(() => {
+            window.location.href = '/view';
+          }, 2000);
+        } else {
+          showError(result.message || "Error processing PDF");
+        }
+      } catch (error) {
+        showError("Error uploading file: " + error.message);
+      } finally {
+        submitButton.disabled = false;
+        loading.classList.remove('visible');
+      }
+    });
+
+    // Initialize particles.js
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: '#ffffff' },
+        shape: { type: 'circle' },
+        opacity: {
+          value: 0.5,
+          random: false,
+          animation: { enable: true, speed: 1, minimumValue: 0.1, sync: false }
+        },
+        size: {
+          value: 3,
+          random: true,
+          animation: { enable: true, speed: 2, minimumValue: 0.1, sync: false }
+        },
+        line_linked: {
+          enable: true,
+          distance: 150,
+          color: '#ffffff',
+          opacity: 0.4,
+          width: 1
+        },
+        move: {
+          enable: true,
+          speed: 1,
+          direction: 'none',
+          random: false,
+          straight: false,
+          outMode: 'out',
+          bounce: false,
+        }
+      },
+      interactivity: {
+        detectsOn: 'canvas',
+        events: {
+          onhover: { enable: true, mode: 'repulse' },
+          onclick: { enable: true, mode: 'push' },
+          resize: true
+        },
+        modes: {
+          repulse: { distance: 100, duration: 0.4 },
+          push: { particles_nb: 4 }
+        }
+      },
+      retina_detect: true
+    });
+
+    // Scroll progress bar
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.querySelector('.progress-bar').style.width = scrolled + '%';
+    });
+  </script>
 </body>
 </html>
