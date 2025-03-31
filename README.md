@@ -10,6 +10,14 @@ A web application built during HackPrinceton that helps users analyze and visual
 - Concept relationship visualization
 - Clean and intuitive web interface
 
+## Built With
+
+- FastAPI - Backend framework
+- PyMuPDF - PDF processing
+- HTML/CSS/JavaScript - Frontend interface
+
+## Created at HackPrinceton 2025
 
 Original Source:
 https://github.com/SilverArgente/Breakdown
+
